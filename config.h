@@ -144,6 +144,9 @@ unsigned int defaultfg = 258;
 unsigned int defaultbg = 259;
 unsigned int selectionfg = 260;
 unsigned int selectionbg = 261;
+/* If 0 use selectionfg as foreground in order to have a uniform foreground-color */
+/* Else if 1 keep original foreground-color of each cell => more colors :) */
+static int ignoreselfg = 1;
 
 /*
 + * https://invisible-island.net/xterm/ctlseqs/ctlseqs.html#h4-Functions-using-CSI-_-ordered-by-the-final-character-lparen-s-rparen:CSI-Ps-SP-q.1D81
