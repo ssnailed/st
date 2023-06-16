@@ -55,8 +55,8 @@ int allowwindowops = 0;
  * near minlatency, but it waits longer for slow updates to avoid partial draw.
  * low minlatency will tear/flicker more, as it can "detect" idle too early.
  */
-static double minlatency = 8;
-static double maxlatency = 33;
+static double minlatency = 3;
+static double maxlatency = 25;
 
 /*
  * blinking timeout (set to 0 to disable blinking) for the terminal blinking
