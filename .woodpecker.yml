@@ -1,0 +1,57 @@
+when:
+  event: tag
+steps:
+  build:
+    image: gcc
+    environment:
+      - BUILD_DEPS=libx11-dev libxft-dev libfreetype6-dev libfontconfig1-dev libharfbuzz-dev
+    commands: |
+      apt-get update
+      apt-get install -y $${BUILD_DEPS}
+      make install DESTDIR="$${CI_WORKSPACE}/pkg" PREFIX="/usr"
+
+  package-xbps:
+    image: ghcr.io/void-linux/void-musl-busybox
+    environment:
+      - LICENSE=GPL-2.0
+      - SHORT_DESCRIPTION=Customized dwm
+    commands: |
+      xbps-create -A x86_64 \
+                  -H "$${CI_REPO_URL}" \
+                  -l "$${LICENSE}" \
+                  -n "$${CI_REPO_NAME}-$${CI_COMMIT_TAG}" \
+                  -m "$${CI_COMMIT_AUTHOR} <$${CI_COMMIT_AUTHOR_EMAIL}>" \
+                  -s "$${SHORT_DESCRIPTION}" \
+                  -c "$${CI_COMMIT_MESSAGE}" \
+                  "$${CI_WORKSPACE}/pkg"
+
+  package-targz:
+    image: alpine
+    commands: |
+      tar czf $${CI_REPO_NAME}-$${CI_COMMIT_TAG}.tar.gz --directory=$${CI_WORKSPACE}/pkg .
+
+  publish:
+    image: woodpeckerci/plugin-gitea-release
+    settings:
+      base_url: https://git.snaile.de
+      files:
+        - "${CI_REPO_NAME}-${CI_COMMIT_TAG}.tar.gz"
+      api_key:
+        from_secret: gitea_release
+      target: main
+
+  publish-xbps:
+    image: ghcr.io/void-linux/void-musl-busybox
+    environment:
+      - XBPS_TARGET_ARCH=x86_64
+    secrets: 
+      - source: xbps_pem_passphrase
+        target: XBPS_PASSPHRASE
+    volumes:
+      - /srv/xbps:/target
+      - /etc/woodpecker/:/etc/woodpecker:ro
+    commands: |
+      export XBPS_TARGET_ARCH
+      mv $${CI_REPO_NAME}-$${CI_COMMIT_TAG}.x86_64.xbps /target
+      xbps-rindex -a /target/$${CI_REPO_NAME}-$${CI_COMMIT_TAG}.x86_64.xbps
+      xbps-rindex -S --signedby "$${CI_COMMIT_AUTHOR} <$${CI_COMMIT_AUTHOR_EMAIL}>" --privkey /etc/woodpecker/privkey.pem /target/$${CI_REPO_NAME}-$${CI_COMMIT_TAG}.x86_64.xbps
