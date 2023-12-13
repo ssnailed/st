@@ -1,1 +1,6 @@
 compile_commands.json
+st.o
+boxdraw.o
+hb.o
+st
+x.o
